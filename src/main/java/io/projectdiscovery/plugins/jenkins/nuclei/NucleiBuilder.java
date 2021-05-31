@@ -23,6 +23,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class NucleiBuilder extends Builder implements SimpleBuildStep {
@@ -69,20 +70,20 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
 
             if (!nucleiExecutable.canExecute()) {
                 if (!nucleiExecutable.setExecutable(true, true)) {
-                    runCommand(logger, launcher, new String[]{"chmod", escapeCliValue("+x", nucleiPath.toString())});
+                    runCommand(logger, launcher, new String[]{"chmod", "+x", nucleiPath.toString()});
                 }
             }
 
             final String nucleiTemplatesPath = workingDirectory.resolve("nuclei-templates").toString();
             runCommand(logger, launcher, new String[]{nucleiPath.toString(),
-                                                      escapeCliValue("-update-directory", nucleiTemplatesPath),
+                                                      "-update-directory", nucleiTemplatesPath,
                                                       "-update-templates"});
 
             final Path outputFilePath = workingDirectory.resolve(String.format("nucleiOutput-%s.txt", run.getId()));
             final String[] mandatoryCommands = {nucleiPath.toString(),
-                                                escapeCliValue("-templates", nucleiTemplatesPath),
-                                                escapeCliValue("-target", this.targetUrl),
-                                                escapeCliValue("-output", outputFilePath.toString()),
+                                                "-templates", nucleiTemplatesPath,
+                                                "-target", this.targetUrl,
+                                                "-output", outputFilePath.toString(),
                                                 "-no-color"};
 
             final String[] resultCommand = mergeCliArguments(mandatoryCommands, this.additionalFlags);
@@ -143,12 +144,15 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
         }
     }
 
-    private static String[] mergeCliArguments(String[] mandatoryCommands, String additionalFlags) {
-        final Stream<String> additionalFlagStream = Arrays.stream(additionalFlags.split("(?= -)")).map(String::trim);
-        return Stream.concat(Arrays.stream(mandatoryCommands), additionalFlagStream).toArray(String[]::new);
-    }
+    static String[] mergeCliArguments(String[] mandatoryCommands, String additionalFlags) {
+        final Stream<String> additionalFlagStream = Arrays.stream(additionalFlags.split("(?= -)"))
+                                                          .map(String::trim)
+                                                          .flatMap(v -> Arrays.stream(v.split(" ", 2)).map(String::trim))
+                                                          .map(v -> {
+                                                              final Predicate<String> tester = (character) -> v.startsWith(character) && v.endsWith(character);
+                                                              return tester.test("\"") || tester.test("'") ? v.substring(1, v.length() - 1) : v;
+                                                          });
 
-    private static String escapeCliValue(String flag, String value) {
-        return String.format("%s \"%s\"", flag, value);
+        return Stream.concat(Arrays.stream(mandatoryCommands), additionalFlagStream).toArray(String[]::new);
     }
 }
