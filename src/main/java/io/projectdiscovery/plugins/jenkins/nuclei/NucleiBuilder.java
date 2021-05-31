@@ -11,7 +11,6 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
-import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -23,28 +22,28 @@ import java.io.PrintStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 public class NucleiBuilder extends Builder implements SimpleBuildStep {
 
+    private static final String NUCLEI_BINARY_NAME = "nuclei";
+
     private final String targetUrl;
-    private boolean additionalFlags;
+    private String additionalFlags;
 
     @DataBoundConstructor
     public NucleiBuilder(String targetUrl) {
         this.targetUrl = targetUrl;
     }
 
-    public String getTargetUrl() {
-        return targetUrl;
-    }
-
     @DataBoundSetter
-    public void setAdditionalFlags(boolean additionalFlags) {
+    public void setAdditionalFlags(String additionalFlags) {
         this.additionalFlags = additionalFlags;
     }
 
     @Override
-    public void perform(@Nonnull Run<?, ?> run, FilePath workspace, @Nonnull Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+    public void perform(@Nonnull Run<?, ?> run, FilePath workspace, @Nonnull Launcher launcher, TaskListener listener) throws IOException {
         final PrintStream logger = listener.getLogger();
         final Path workingDirectory = Paths.get(workspace.getRemote());
         logger.println("Workspace absolute path: " + workingDirectory);
@@ -55,8 +54,8 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
         if (workspace.isRemote()) {
             logger.println("Slave builds are not yet supported");
         } else {
-            final Path nucleiPath = operatingSystem == SupportedOperatingSystem.Windows ? workingDirectory.resolve("nuclei.exe")
-                                                                                        : workingDirectory.resolve("nuclei");
+            final Path nucleiPath = operatingSystem == SupportedOperatingSystem.Windows ? workingDirectory.resolve(NUCLEI_BINARY_NAME + ".exe")
+                                                                                        : workingDirectory.resolve(NUCLEI_BINARY_NAME);
 
             final File nucleiExecutable = nucleiPath.toFile();
             if (!nucleiExecutable.exists()) {
@@ -69,21 +68,64 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
             }
 
             if (!nucleiExecutable.canExecute()) {
-                nucleiExecutable.setExecutable(true, true);
-                // runCommand(logger, launcher, new String[] {"chmod", "+x", nucleiPath.toString()});
+                if (!nucleiExecutable.setExecutable(true, true)) {
+                    runCommand(logger, launcher, new String[]{"chmod", escapeCliValue("+x", nucleiPath.toString())});
+                }
             }
 
             final String nucleiTemplatesPath = workingDirectory.resolve("nuclei-templates").toString();
-            runCommand(logger, launcher, new String[]{nucleiPath.toString(), "-ud", nucleiTemplatesPath, "-ut"});
+            runCommand(logger, launcher, new String[]{nucleiPath.toString(),
+                                                      escapeCliValue("-update-directory", nucleiTemplatesPath),
+                                                      "-update-templates"});
 
             final Path outputFilePath = workingDirectory.resolve(String.format("nucleiOutput-%s.txt", run.getId()));
             final String[] mandatoryCommands = {nucleiPath.toString(),
-                                                "-t", nucleiTemplatesPath,
-                                                "-u", targetUrl,
-                                                "-o", outputFilePath.toString(),
-                                                "-nc"};
+                                                escapeCliValue("-templates", nucleiTemplatesPath),
+                                                escapeCliValue("-target", this.targetUrl),
+                                                escapeCliValue("-output", outputFilePath.toString()),
+                                                "-no-color"};
 
-            runCommand(logger, launcher, mandatoryCommands);
+            final String[] resultCommand = mergeCliArguments(mandatoryCommands, this.additionalFlags);
+
+            runCommand(logger, launcher, resultCommand);
+        }
+    }
+
+    @Extension
+    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+
+        @SuppressWarnings("unused")
+        public FormValidation doCheckTargetUrl(@QueryParameter String targetUrl, @QueryParameter String additionalFlags) {
+
+            if (targetUrl.isEmpty()) {
+                return FormValidation.error(Messages.NucleiBuilder_DescriptorImpl_errors_missingName());
+            }
+
+            // TODO additionalFlags validation?
+            return FormValidation.ok();
+        }
+
+        @Override
+        public boolean isApplicable(Class<? extends AbstractProject> aClass) {
+            return true;
+        }
+
+        @Nonnull
+        @Override
+        public String getDisplayName() {
+            return Messages.NucleiBuilder_DescriptorImpl_DisplayName();
+        }
+    }
+
+    private static void runCommand(PrintStream logger, Launcher launcher, String[] command) {
+        try {
+            Launcher.ProcStarter procStarter = launcher.launch();
+
+            Proc process = procStarter.cmds(command).stdout(logger).stderr(logger).start();
+
+            process.join();
+        } catch (IOException | InterruptedException e) {
+            logger.println("Error while trying to run the following command: " + String.join(" ", command));
         }
     }
 
@@ -101,36 +143,12 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
         }
     }
 
-    private void runCommand(PrintStream logger, Launcher launcher, String[] command) throws IOException, InterruptedException {
-        Launcher.ProcStarter procStarter = launcher.launch();
-
-        Proc process = procStarter.cmds(command).stdout(logger).stderr(logger).start();
-
-        process.join();
+    private static String[] mergeCliArguments(String[] mandatoryCommands, String additionalFlags) {
+        final Stream<String> additionalFlagStream = Arrays.stream(additionalFlags.split("(?= -)")).map(String::trim);
+        return Stream.concat(Arrays.stream(mandatoryCommands), additionalFlagStream).toArray(String[]::new);
     }
 
-//    @Symbol("greet")
-    @Extension
-    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-
-        public FormValidation doCheckTargetUrl(@QueryParameter String targetUrl, @QueryParameter String additionalFlags) {
-
-            if (targetUrl.isEmpty())
-                return FormValidation.error(Messages.NucleiBuilder_DescriptorImpl_errors_missingName());
-
-            // TODO additonalFlags validation
-
-            return FormValidation.ok();
-        }
-
-        @Override
-        public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-            return true;
-        }
-
-        @Override
-        public String getDisplayName() {
-            return Messages.NucleiBuilder_DescriptorImpl_DisplayName();
-        }
+    private static String escapeCliValue(String flag, String value) {
+        return String.format("%s \"%s\"", flag, value);
     }
 }
