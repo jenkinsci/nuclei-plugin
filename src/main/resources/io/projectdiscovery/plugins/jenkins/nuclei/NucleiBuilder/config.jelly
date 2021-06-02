@@ -3,8 +3,11 @@
     <f:entry title="${%TargetUrl}" field="targetUrl">
         <f:textbox />
     </f:entry>
+    <f:entry title="${%ReportingConfiguration}" field="reportingConfiguration" description="${%ReportingConfigurationDescription}">
+        <f:textbox />
+    </f:entry>
     <f:advanced>
-        <f:entry title="${%AdditionalFlags}" field="additionalFlags" description="${%AdditionalFlagsDescr}">
+        <f:entry title="${%AdditionalFlags}" field="reportingConfiguration" description="${%AdditionalFlagsDescription}">
             <f:textbox />
         </f:entry>
     </f:advanced>

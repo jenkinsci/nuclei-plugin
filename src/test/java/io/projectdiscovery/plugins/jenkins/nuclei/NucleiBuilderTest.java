@@ -10,7 +10,7 @@ public class NucleiBuilderTest {
         final String[] mandatoryArguments = {"-target", "http://localhost:8080/vulnerableApp", "-no-color"};
         final String additionalFlags = "-a  space-prefix -b-b space between -c-c-c two more spaces  -dd \"c:/program files/asd\" -ee ''";
 
-        final String[] result = NucleiBuilder.mergeCliArguments(mandatoryArguments, additionalFlags);
+        final String[] result = NucleiBuilderHelper.mergeCliArguments(mandatoryArguments, additionalFlags);
         Assert.assertArrayEquals(result, new String[]{"-target", "http://localhost:8080/vulnerableApp",
                                                       "-no-color",
                                                       "-a", "space-prefix",
