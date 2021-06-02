@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -64,11 +65,11 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
         final String nucleiTemplatesPath = NucleiBuilderHelper.downloadTemplates(launcher, workingDirectory, nucleiPath, logger);
 
         final Path outputFilePath = workingDirectory.resolve(String.format("nucleiOutput-%s.txt", run.getId()));
-        final List<String> cliArguments = Arrays.asList(nucleiPath.toString(),
-                                                        "-templates", nucleiTemplatesPath,
-                                                        "-target", this.targetUrl,
-                                                        "-output", outputFilePath.toString(),
-                                                        "-no-color");
+        final List<String> cliArguments = new ArrayList<>(Arrays.asList(nucleiPath.toString(),
+                                                                        "-templates", nucleiTemplatesPath,
+                                                                        "-target", this.targetUrl,
+                                                                        "-output", outputFilePath.toString(),
+                                                                        "-no-color"));
 
         if (this.reportingConfiguration != null && !this.reportingConfiguration.isEmpty()) {
             final Path reportConfigPath = Files.write(workingDirectory.resolve("reporting_config.yml"), this.reportingConfiguration.getBytes(StandardCharsets.UTF_8),
