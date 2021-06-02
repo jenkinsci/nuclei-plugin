@@ -1,10 +1,9 @@
 <?jelly escape-by-default='true'?>
 <div>
-    Nuclei Open-Source Vulnerability Scanner integration<br>
-
+    Nuclei Open-Source Vulnerability Scanner integration<br/>
     For more info visit:
     <ul>
-        <li><a href="https://nuclei.projectdiscovery.io/">https://nuclei.projectdiscovery.io/</a></li>
+        <li><a href="https://nuclei.projectdiscovery.io/">https://nuclei.projectdiscovery.io</a></li>
         <li><a href="https://github.com/projectdiscovery/nuclei">https://github.com/projectdiscovery/nuclei</a></li>
     </ul>
 </div>
