@@ -73,7 +73,7 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
 
         if (this.reportingConfiguration != null && !this.reportingConfiguration.isEmpty()) {
             final Path reportConfigPath = Files.write(workingDirectory.resolve("reporting_config.yml"), this.reportingConfiguration.getBytes(StandardCharsets.UTF_8),
-                                                      StandardOpenOption.CREATE_NEW, StandardOpenOption.TRUNCATE_EXISTING);
+                                                      StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             cliArguments.add("-report-config");
             cliArguments.add(reportConfigPath.toString());
         }
