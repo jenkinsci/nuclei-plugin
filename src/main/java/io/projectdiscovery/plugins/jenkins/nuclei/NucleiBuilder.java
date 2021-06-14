@@ -25,6 +25,10 @@ import java.util.List;
 
 public class NucleiBuilder extends Builder implements SimpleBuildStep {
 
+    /**
+     * The fields must either be public or have public getters in order for Jenkins to be able to re-populate them on job configuration re-load.
+     * The name of the fields must match the ones specified in <i>config.jelly</i>
+     */
     private final String targetUrl;
     private String additionalFlags;
     private String reportingConfiguration;
@@ -42,6 +46,25 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
     @DataBoundSetter
     public void setReportingConfiguration(String reportingConfiguration) {
         this.reportingConfiguration = reportingConfiguration;
+    }
+
+    /**
+     * Getter is used by Jenkins to set the previously configured values within a job configuration.
+     * Re-opening the configuration of an existing job should reload the previous values.
+     */
+    @SuppressWarnings("unused")
+    public String getTargetUrl() {
+        return targetUrl;
+    }
+
+    @SuppressWarnings("unused")
+    public String getReportingConfiguration() {
+        return reportingConfiguration;
+    }
+
+    @SuppressWarnings("unused")
+    public String getAdditionalFlags() {
+        return additionalFlags;
     }
 
     @Override
@@ -86,6 +109,16 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
+        /**
+         * This method is called by Jenkins to validate the input fields before saving the job's configuration.
+         * The name of the method must start with <b>doCheck</b> followed by the name of one of the fields declared in the <i>config.jelly</i>,
+         * using standard Java naming conventions and must return {@link FormValidation}.
+         * The fields intended for validation must match the name of the fields within <i>config.jelly</i> and has to be annotated with {@link QueryParameter}.
+         * @param targetUrl The URL of the desired application to be tested (mandatory)
+         * @param additionalFlags Additional CLI arguments (e.g. -v -debug)
+         * @param reportingConfiguration Issue tracker configuration (e.g. Jira/GitHub)
+         * @return {@link FormValidation#ok()} or {@link FormValidation#error(java.lang.String)} in case of a validation error.
+         */
         @SuppressWarnings("unused")
         public FormValidation doCheckTargetUrl(@QueryParameter String targetUrl, @QueryParameter String additionalFlags, @QueryParameter String reportingConfiguration) {
 
