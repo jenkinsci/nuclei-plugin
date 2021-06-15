@@ -19,7 +19,6 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -69,39 +68,36 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(@Nonnull Run<?, ?> run, FilePath workspace, @Nonnull Launcher launcher, TaskListener listener) throws IOException {
+    public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, TaskListener listener) {
         final PrintStream logger = listener.getLogger();
-        final Path workingDirectory = Paths.get(workspace.getRemote());
-
-        final SupportedOperatingSystem operatingSystem = SupportedOperatingSystem.getType(System.getProperty("os.name"));
-        logger.println("Retrieved operating system: " + operatingSystem);
-
-        if (workspace.isRemote()) {
-            performOnSlave(run, launcher, logger, workingDirectory, operatingSystem);
-        } else {
-            performOnMaster(run, launcher, logger, workingDirectory, operatingSystem);
-        }
-    }
-
-    private void performOnSlave(Run<?, ?> run, Launcher launcher, PrintStream logger, Path workingDirectory, SupportedOperatingSystem operatingSystem) {
-        logger.println("Remote directory: " + workingDirectory);
 
         final VirtualChannel virtualChannel = launcher.getChannel();
         if (virtualChannel == null) {
             throw new IllegalStateException("The agent does not support remote operations!");
         }
 
-        final FilePath filePathWorkingDirectory = new FilePath(virtualChannel, workingDirectory.toString());
-        logger.println("Remote filepath directory: " + filePathWorkingDirectory);
+        final FilePath workingDirectory = new FilePath(virtualChannel, workspace.getRemote());
+        logger.println("Working directory: " + workingDirectory);
 
-        final RemoteNucleiDownloader remoteNucleiDownloader = new RemoteNucleiDownloader(filePathWorkingDirectory, operatingSystem);
-        final List<String> cliArguments = createMandatoryCliArguments(run, launcher, logger, virtualChannel, filePathWorkingDirectory, remoteNucleiDownloader);
-
-        addIssueTrackerConfig(cliArguments, filePathWorkingDirectory);
-
-        final String[] resultCommand = NucleiBuilderHelper.mergeCliArguments(cliArguments, this.additionalFlags);
-
+        final String nucleiBinaryPath = NucleiBuilderHelper.prepareNucleiBinary(logger, virtualChannel, workingDirectory);
+        final String[] resultCommand = createScanCommand(run, launcher, logger, workingDirectory, nucleiBinaryPath);
         NucleiBuilderHelper.runCommand(logger, launcher, resultCommand);
+    }
+
+    private String[] createScanCommand(Run<?, ?> run, Launcher launcher, PrintStream logger, FilePath workingDirectory, String nucleiBinaryPath) {
+        final List<String> cliArguments = createMandatoryCliArguments(run, launcher, logger, workingDirectory, nucleiBinaryPath);
+        addIssueTrackerConfig(cliArguments, workingDirectory);
+        return NucleiBuilderHelper.mergeCliArguments(cliArguments, this.additionalFlags);
+    }
+
+    private List<String> createMandatoryCliArguments(Run<?, ?> run, Launcher launcher, PrintStream logger, FilePath filePathWorkingDirectory, String nucleiPath) {
+        final String nucleiTemplatesPath = NucleiBuilderHelper.downloadTemplates(launcher, filePathWorkingDirectory, nucleiPath, logger);
+        final FilePath outputFilePath = NucleiBuilderHelper.resolveFilePath(filePathWorkingDirectory, String.format("nucleiOutput-%s.txt", run.getId()));
+        return new ArrayList<>(Arrays.asList(nucleiPath,
+                                             "-templates", nucleiTemplatesPath,
+                                             "-target", this.targetUrl,
+                                             "-output", outputFilePath.getRemote(),
+                                             "-no-color"));
     }
 
     private void addIssueTrackerConfig(List<String> cliArguments, FilePath filePathWorkingDirectory) {
@@ -116,56 +112,6 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
                 throw new IllegalStateException(String.format("Error while writing the reporting/issue tracking configuration to '%s'", reportConfigPath.getRemote()));
             }
         }
-    }
-
-    private List<String> createMandatoryCliArguments(Run<?, ?> run, Launcher launcher, PrintStream logger, VirtualChannel virtualChannel, FilePath filePathWorkingDirectory, RemoteNucleiDownloader remoteNucleiDownloader) {
-        try {
-            final String nucleiPath = virtualChannel.call(remoteNucleiDownloader).getRemote();
-
-            final String nucleiTemplatesPath = remoteDownloadTemplates(launcher, filePathWorkingDirectory, nucleiPath, logger);
-            final FilePath outputFilePath = NucleiBuilderHelper.resolveFilePath(filePathWorkingDirectory, String.format("nucleiOutput-%s.txt", run.getId()));
-            return new ArrayList<>(Arrays.asList(nucleiPath,
-                                                 "-templates", nucleiTemplatesPath,
-                                                 "-target", this.targetUrl,
-                                                 "-output", outputFilePath.getRemote(),
-                                                 "-no-color"));
-        } catch (Exception e) {
-            logger.println("Error while obtaining Nuclei binary");
-            throw new IllegalStateException("");
-        }
-    }
-
-    static String remoteDownloadTemplates(Launcher launcher, FilePath workingDirectory, String nucleiPath, PrintStream logger) {
-        final String nucleiTemplatesPath = NucleiBuilderHelper.resolveFilePath(workingDirectory, "nuclei-templates").getRemote();
-        NucleiBuilderHelper.runCommand(logger, launcher, new String[]{nucleiPath,
-                                                                      "-update-directory", nucleiTemplatesPath,
-                                                                      "-update-templates",
-                                                                      "-no-color"});
-        return nucleiTemplatesPath;
-    }
-
-    private void performOnMaster(Run<?, ?> run, Launcher launcher, PrintStream logger, Path workingDirectory, SupportedOperatingSystem operatingSystem) throws IOException {
-        final Path nucleiPath = NucleiBuilderHelper.prepareNucleiBinary(operatingSystem, launcher, workingDirectory, logger);
-
-        final String nucleiTemplatesPath = NucleiBuilderHelper.downloadTemplates(launcher, workingDirectory, nucleiPath, logger);
-
-        final Path outputFilePath = workingDirectory.resolve(String.format("nucleiOutput-%s.txt", run.getId()));
-        final List<String> cliArguments = new ArrayList<>(Arrays.asList(nucleiPath.toString(),
-                                                                        "-templates", nucleiTemplatesPath,
-                                                                        "-target", this.targetUrl,
-                                                                        "-output", outputFilePath.toString(),
-                                                                        "-no-color"));
-
-        if (this.reportingConfiguration != null && !this.reportingConfiguration.isEmpty()) {
-            final Path reportConfigPath = Files.write(workingDirectory.resolve("reporting_config.yml"), this.reportingConfiguration.getBytes(StandardCharsets.UTF_8),
-                                                      StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            cliArguments.add("-report-config");
-            cliArguments.add(reportConfigPath.toString());
-        }
-
-        final String[] resultCommand = NucleiBuilderHelper.mergeCliArguments(cliArguments, this.additionalFlags);
-
-        NucleiBuilderHelper.runCommand(logger, launcher, resultCommand);
     }
 
     @Extension

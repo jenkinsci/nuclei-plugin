@@ -3,12 +3,11 @@ package io.projectdiscovery.plugins.jenkins.nuclei;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Proc;
+import hudson.remoting.VirtualChannel;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.URL;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
@@ -16,23 +15,7 @@ import java.util.stream.Stream;
 
 public final class NucleiBuilderHelper {
 
-    private static final String NUCLEI_BINARY_NAME = "nuclei";
-
     private NucleiBuilderHelper() {
-    }
-
-    static void downloadAndUnpackLatestNuclei(SupportedOperatingSystem operatingSystem, SupportedArchitecture architecture, Path workingDirectory, PrintStream logger) throws IOException {
-        final URL downloadUrl = NucleiDownloader.extractDownloadUrl(operatingSystem, architecture);
-        logger.println("Extracted download URL: " + downloadUrl);
-
-        final String downloadFilePath = downloadUrl.getPath().toLowerCase();
-        if (downloadFilePath.endsWith(".zip")) {
-            CompressionUtil.unZip(downloadUrl, workingDirectory);
-        } else if (downloadFilePath.endsWith(".tar.gz")) {
-            CompressionUtil.unTarGz(downloadUrl, workingDirectory);
-        } else {
-            throw new IllegalStateException(String.format("Unsupported file type ('%s'). It should be '.tar.gz' or '.zip'!", downloadFilePath));
-        }
     }
 
     static String[] mergeCliArguments(List<String> mandatoryCommands, String additionalFlags) {
@@ -70,40 +53,35 @@ public final class NucleiBuilderHelper {
         }
     }
 
-    static Path prepareNucleiBinary(SupportedOperatingSystem operatingSystem, Launcher launcher, Path workingDirectory, PrintStream logger) throws IOException {
-        final Path nucleiPath = operatingSystem == SupportedOperatingSystem.Windows ? workingDirectory.resolve(NUCLEI_BINARY_NAME + ".exe")
-                                                                                    : workingDirectory.resolve(NUCLEI_BINARY_NAME);
-        final File nucleiExecutable = nucleiPath.toFile();
-        if (!nucleiExecutable.exists()) {
-            final SupportedArchitecture architecture = SupportedArchitecture.getType(System.getProperty("os.arch"));
-            logger.println("Retrieved architecture: " + architecture);
-
-            logger.println("Downloading latest version of Nuclei!");
-            downloadAndUnpackLatestNuclei(operatingSystem, architecture, workingDirectory, logger);
-        }
-
-        if (!nucleiExecutable.canExecute()) {
-            if (!nucleiExecutable.setExecutable(true, true)) {
-                runCommand(logger, launcher, new String[]{"chmod", "+x", nucleiPath.toString()});
-            }
-        }
-
-        return nucleiPath;
-    }
-
-    static String downloadTemplates(Launcher launcher, Path workingDirectory, Path nucleiPath, PrintStream logger) {
-        final String nucleiTemplatesPath = workingDirectory.resolve("nuclei-templates").toString();
-        runCommand(logger, launcher, new String[]{nucleiPath.toString(),
-                                                  "-update-directory", nucleiTemplatesPath,
-                                                  "-update-templates"});
-        return nucleiTemplatesPath;
-    }
-
     static FilePath resolveFilePath(FilePath directory, String fileName) {
         final String absolutePath = directory.getRemote();
 
         final String resultPath = absolutePath.endsWith(File.separator) ? (absolutePath + fileName)
                                                                         : (absolutePath + File.separator + fileName);
         return new FilePath(directory.getChannel(), resultPath);
+    }
+
+    static String downloadTemplates(Launcher launcher, FilePath workingDirectory, String nucleiPath, PrintStream logger) {
+        final String nucleiTemplatesPath = resolveFilePath(workingDirectory, "nuclei-templates").getRemote();
+        runCommand(logger, launcher, new String[]{nucleiPath,
+                                                  "-update-directory", nucleiTemplatesPath,
+                                                  "-update-templates",
+                                                  "-no-color"});
+        return nucleiTemplatesPath;
+    }
+
+    static String prepareNucleiBinary(PrintStream logger, VirtualChannel virtualChannel, FilePath workingDirectory) {
+        final SupportedOperatingSystem operatingSystem = SupportedOperatingSystem.getType(System.getProperty("os.name"));
+        logger.println("Retrieved operating system: " + operatingSystem);
+        return downloadNuclei(operatingSystem, virtualChannel, workingDirectory);
+    }
+
+    private static String downloadNuclei(SupportedOperatingSystem operatingSystem, VirtualChannel virtualChannel, FilePath filePathWorkingDirectory) {
+        final RemoteNucleiDownloader remoteNucleiDownloader = new RemoteNucleiDownloader(filePathWorkingDirectory, operatingSystem);
+        try {
+            return virtualChannel.call(remoteNucleiDownloader).getRemote();
+        } catch (Exception e) {
+            throw new IllegalStateException("Error while obtaining Nuclei binary.");
+        }
     }
 }
