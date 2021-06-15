@@ -6,6 +6,7 @@ import hudson.Launcher;
 import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
@@ -76,10 +77,71 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
         logger.println("Retrieved operating system: " + operatingSystem);
 
         if (workspace.isRemote()) {
-            logger.println("Slave builds are not yet supported");
+            performOnSlave(run, launcher, logger, workingDirectory, operatingSystem);
         } else {
             performOnMaster(run, launcher, logger, workingDirectory, operatingSystem);
         }
+    }
+
+    private void performOnSlave(Run<?, ?> run, Launcher launcher, PrintStream logger, Path workingDirectory, SupportedOperatingSystem operatingSystem) {
+        logger.println("Remote directory: " + workingDirectory);
+
+        final VirtualChannel virtualChannel = launcher.getChannel();
+        if (virtualChannel == null) {
+            throw new IllegalStateException("The agent does not support remote operations!");
+        }
+
+        final FilePath filePathWorkingDirectory = new FilePath(virtualChannel, workingDirectory.toString());
+        logger.println("Remote filepath directory: " + filePathWorkingDirectory);
+
+        final RemoteNucleiDownloader remoteNucleiDownloader = new RemoteNucleiDownloader(filePathWorkingDirectory, operatingSystem);
+        final List<String> cliArguments = createMandatoryCliArguments(run, launcher, logger, virtualChannel, filePathWorkingDirectory, remoteNucleiDownloader);
+
+        addIssueTrackerConfig(cliArguments, filePathWorkingDirectory);
+
+        final String[] resultCommand = NucleiBuilderHelper.mergeCliArguments(cliArguments, this.additionalFlags);
+
+        NucleiBuilderHelper.runCommand(logger, launcher, resultCommand);
+    }
+
+    private void addIssueTrackerConfig(List<String> cliArguments, FilePath filePathWorkingDirectory) {
+        if (this.reportingConfiguration != null && !this.reportingConfiguration.isEmpty()) {
+            final FilePath reportConfigPath = NucleiBuilderHelper.resolveFilePath(filePathWorkingDirectory, "reporting_config.yml");
+            try {
+                reportConfigPath.write(this.reportingConfiguration, StandardCharsets.UTF_8.name());
+
+                cliArguments.add("-report-config");
+                cliArguments.add(reportConfigPath.getRemote());
+            } catch (IOException | InterruptedException e) {
+                throw new IllegalStateException(String.format("Error while writing the reporting/issue tracking configuration to '%s'", reportConfigPath.getRemote()));
+            }
+        }
+    }
+
+    private List<String> createMandatoryCliArguments(Run<?, ?> run, Launcher launcher, PrintStream logger, VirtualChannel virtualChannel, FilePath filePathWorkingDirectory, RemoteNucleiDownloader remoteNucleiDownloader) {
+        try {
+            final String nucleiPath = virtualChannel.call(remoteNucleiDownloader).getRemote();
+
+            final String nucleiTemplatesPath = remoteDownloadTemplates(launcher, filePathWorkingDirectory, nucleiPath, logger);
+            final FilePath outputFilePath = NucleiBuilderHelper.resolveFilePath(filePathWorkingDirectory, String.format("nucleiOutput-%s.txt", run.getId()));
+            return new ArrayList<>(Arrays.asList(nucleiPath,
+                                                 "-templates", nucleiTemplatesPath,
+                                                 "-target", this.targetUrl,
+                                                 "-output", outputFilePath.getRemote(),
+                                                 "-no-color"));
+        } catch (Exception e) {
+            logger.println("Error while obtaining Nuclei binary");
+            throw new IllegalStateException("");
+        }
+    }
+
+    static String remoteDownloadTemplates(Launcher launcher, FilePath workingDirectory, String nucleiPath, PrintStream logger) {
+        final String nucleiTemplatesPath = NucleiBuilderHelper.resolveFilePath(workingDirectory, "nuclei-templates").getRemote();
+        NucleiBuilderHelper.runCommand(logger, launcher, new String[]{nucleiPath,
+                                                                      "-update-directory", nucleiTemplatesPath,
+                                                                      "-update-templates",
+                                                                      "-no-color"});
+        return nucleiTemplatesPath;
     }
 
     private void performOnMaster(Run<?, ?> run, Launcher launcher, PrintStream logger, Path workingDirectory, SupportedOperatingSystem operatingSystem) throws IOException {
@@ -114,8 +176,9 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
          * The name of the method must start with <b>doCheck</b> followed by the name of one of the fields declared in the <i>config.jelly</i>,
          * using standard Java naming conventions and must return {@link FormValidation}.
          * The fields intended for validation must match the name of the fields within <i>config.jelly</i> and has to be annotated with {@link QueryParameter}.
-         * @param targetUrl The URL of the desired application to be tested (mandatory)
-         * @param additionalFlags Additional CLI arguments (e.g. -v -debug)
+         *
+         * @param targetUrl              The URL of the desired application to be tested (mandatory)
+         * @param additionalFlags        Additional CLI arguments (e.g. -v -debug)
          * @param reportingConfiguration Issue tracker configuration (e.g. Jira/GitHub)
          * @return {@link FormValidation#ok()} or {@link FormValidation#error(java.lang.String)} in case of a validation error.
          */

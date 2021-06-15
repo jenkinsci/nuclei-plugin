@@ -1,5 +1,6 @@
 package io.projectdiscovery.plugins.jenkins.nuclei;
 
+import hudson.FilePath;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -30,9 +31,17 @@ public final class CompressionUtil {
         }
     }
 
-    public static void unZip(URL url, Path pathOutput) throws IOException {
+    public static void unTarGz(URL url, FilePath pathOutput) throws IOException {
         try (final InputStream inputStream = url.openStream()) {
-            unZip(inputStream, pathOutput);
+            unTarGz(inputStream, pathOutput);
+        }
+    }
+
+    public static void unTarGz(InputStream inputStream, FilePath pathOutput) throws IOException {
+        try {
+            pathOutput.untarFrom(inputStream, FilePath.TarCompression.GZIP);
+        } catch (InterruptedException e) {
+            throw new IllegalStateException("Thread interrupted while trying to uncompress the file!");
         }
     }
 
@@ -50,6 +59,26 @@ public final class CompressionUtil {
                 } else
                     Files.copy(tarArchiveInputStream, pathEntryOutput, StandardCopyOption.REPLACE_EXISTING);
             }
+        }
+    }
+
+    public static void unZip(URL url, Path pathOutput) throws IOException {
+        try (final InputStream inputStream = url.openStream()) {
+            unZip(inputStream, pathOutput);
+        }
+    }
+
+    public static void unZip(URL url, FilePath pathOutput) throws IOException {
+        try (final InputStream inputStream = url.openStream()) {
+            unZip(inputStream, pathOutput);
+        }
+    }
+
+    public static void unZip(InputStream inputStream, FilePath pathOutput) throws IOException {
+        try {
+            pathOutput.unzipFrom(inputStream);
+        } catch (InterruptedException e) {
+            throw new IllegalStateException("Thread interrupted while trying to uncompress the file!");
         }
     }
 

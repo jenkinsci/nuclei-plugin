@@ -1,5 +1,6 @@
 package io.projectdiscovery.plugins.jenkins.nuclei;
 
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Proc;
 
@@ -21,7 +22,7 @@ public final class NucleiBuilderHelper {
     }
 
     static void downloadAndUnpackLatestNuclei(SupportedOperatingSystem operatingSystem, SupportedArchitecture architecture, Path workingDirectory, PrintStream logger) throws IOException {
-        final URL downloadUrl = NucleiDownloader.extractDownloadUrl(operatingSystem, architecture); // TODO log exceptions
+        final URL downloadUrl = NucleiDownloader.extractDownloadUrl(operatingSystem, architecture);
         logger.println("Extracted download URL: " + downloadUrl);
 
         final String downloadFilePath = downloadUrl.getPath().toLowerCase();
@@ -96,5 +97,13 @@ public final class NucleiBuilderHelper {
                                                   "-update-directory", nucleiTemplatesPath,
                                                   "-update-templates"});
         return nucleiTemplatesPath;
+    }
+
+    static FilePath resolveFilePath(FilePath directory, String fileName) {
+        final String absolutePath = directory.getRemote();
+
+        final String resultPath = absolutePath.endsWith(File.separator) ? (absolutePath + fileName)
+                                                                        : (absolutePath + File.separator + fileName);
+        return new FilePath(directory.getChannel(), resultPath);
     }
 }
