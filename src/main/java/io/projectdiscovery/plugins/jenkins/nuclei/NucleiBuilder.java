@@ -6,7 +6,6 @@ import hudson.Launcher;
 import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
@@ -71,22 +70,16 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
     public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, TaskListener listener) {
         final PrintStream logger = listener.getLogger();
 
-        final VirtualChannel virtualChannel = launcher.getChannel();
-        if (virtualChannel == null) {
-            throw new IllegalStateException("The agent does not support remote operations!");
-        }
-
-        final FilePath workingDirectory = new FilePath(virtualChannel, workspace.getRemote());
-        logger.println("Working directory: " + workingDirectory);
-
-        final String nucleiBinaryPath = NucleiBuilderHelper.prepareNucleiBinary(logger, virtualChannel, workingDirectory);
+        final FilePath workingDirectory = NucleiBuilderHelper.getWorkingDirectory(launcher, workspace, logger);
+        final String nucleiBinaryPath = NucleiBuilderHelper.prepareNucleiBinary(logger, workingDirectory);
         final String[] resultCommand = createScanCommand(run, launcher, logger, workingDirectory, nucleiBinaryPath);
+
         NucleiBuilderHelper.runCommand(logger, launcher, resultCommand);
     }
 
     private String[] createScanCommand(Run<?, ?> run, Launcher launcher, PrintStream logger, FilePath workingDirectory, String nucleiBinaryPath) {
         final List<String> cliArguments = createMandatoryCliArguments(run, launcher, logger, workingDirectory, nucleiBinaryPath);
-        addIssueTrackerConfig(cliArguments, workingDirectory);
+        addIssueTrackerConfig(workingDirectory, cliArguments);
         return NucleiBuilderHelper.mergeCliArguments(cliArguments, this.additionalFlags);
     }
 
@@ -100,9 +93,9 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
                                              "-no-color"));
     }
 
-    private void addIssueTrackerConfig(List<String> cliArguments, FilePath filePathWorkingDirectory) {
+    private void addIssueTrackerConfig(FilePath workingDirectory, List<String> cliArguments) {
         if (this.reportingConfiguration != null && !this.reportingConfiguration.isEmpty()) {
-            final FilePath reportConfigPath = NucleiBuilderHelper.resolveFilePath(filePathWorkingDirectory, "reporting_config.yml");
+            final FilePath reportConfigPath = NucleiBuilderHelper.resolveFilePath(workingDirectory, "reporting_config.yml");
             try {
                 reportConfigPath.write(this.reportingConfiguration, StandardCharsets.UTF_8.name());
 

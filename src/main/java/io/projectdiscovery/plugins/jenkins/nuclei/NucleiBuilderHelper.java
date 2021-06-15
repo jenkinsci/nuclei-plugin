@@ -8,6 +8,7 @@ import hudson.remoting.VirtualChannel;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
@@ -15,8 +16,9 @@ import java.util.stream.Stream;
 
 public final class NucleiBuilderHelper {
 
-    private NucleiBuilderHelper() {
-    }
+    private static final String NUCLEI_BINARY_NAME = "nuclei";
+
+    private NucleiBuilderHelper() {}
 
     static String[] mergeCliArguments(List<String> mandatoryCommands, String additionalFlags) {
         return mergeCliArguments(mandatoryCommands.toArray(new String[0]), additionalFlags);
@@ -70,18 +72,50 @@ public final class NucleiBuilderHelper {
         return nucleiTemplatesPath;
     }
 
-    static String prepareNucleiBinary(PrintStream logger, VirtualChannel virtualChannel, FilePath workingDirectory) {
-        final SupportedOperatingSystem operatingSystem = SupportedOperatingSystem.getType(System.getProperty("os.name"));
-        logger.println("Retrieved operating system: " + operatingSystem);
-        return downloadNuclei(operatingSystem, virtualChannel, workingDirectory);
-    }
-
-    private static String downloadNuclei(SupportedOperatingSystem operatingSystem, VirtualChannel virtualChannel, FilePath filePathWorkingDirectory) {
-        final RemoteNucleiDownloader remoteNucleiDownloader = new RemoteNucleiDownloader(filePathWorkingDirectory, operatingSystem);
+    static String prepareNucleiBinary(PrintStream logger, FilePath workingDirectory) {
         try {
-            return virtualChannel.call(remoteNucleiDownloader).getRemote();
+            final SupportedOperatingSystem operatingSystem = SupportedOperatingSystem.getType(System.getProperty("os.name"));
+            logger.println("Retrieved operating system: " + operatingSystem);
+
+            final String nucleiBinaryName = operatingSystem == SupportedOperatingSystem.Windows ? NUCLEI_BINARY_NAME + ".exe"
+                                                                                                : NUCLEI_BINARY_NAME;
+            final FilePath nucleiPath = NucleiBuilderHelper.resolveFilePath(workingDirectory, nucleiBinaryName);
+
+            if (nucleiPath.exists()) {
+                final int fullPermissionToOwner = 0700;
+                nucleiPath.chmod(fullPermissionToOwner);
+            } else {
+                final SupportedArchitecture architecture = SupportedArchitecture.getType(System.getProperty("os.arch"));
+                downloadAndUnpackLatestNuclei(operatingSystem, architecture, workingDirectory);
+            }
+
+            return nucleiPath.getRemote();
         } catch (Exception e) {
             throw new IllegalStateException("Error while obtaining Nuclei binary.");
         }
+    }
+
+    static void downloadAndUnpackLatestNuclei(SupportedOperatingSystem operatingSystem, SupportedArchitecture architecture, FilePath workingDirectory) throws IOException {
+        final URL downloadUrl = NucleiDownloader.extractDownloadUrl(operatingSystem, architecture);
+
+        final String downloadFilePath = downloadUrl.getPath().toLowerCase();
+        if (downloadFilePath.endsWith(".zip")) {
+            CompressionUtil.unZip(downloadUrl, workingDirectory);
+        } else if (downloadFilePath.endsWith(".tar.gz")) {
+            CompressionUtil.unTarGz(downloadUrl, workingDirectory);
+        } else {
+            throw new IllegalStateException(String.format("Unsupported file type ('%s'). It should be '.tar.gz' or '.zip'!", downloadFilePath));
+        }
+    }
+
+    static FilePath getWorkingDirectory(Launcher launcher, FilePath workspace, PrintStream logger) {
+        final VirtualChannel virtualChannel = launcher.getChannel();
+        if (virtualChannel == null) {
+            throw new IllegalStateException("The agent does not support remote operations!");
+        }
+
+        final FilePath workingDirectory = new FilePath(virtualChannel, workspace.getRemote());
+        logger.println("Working directory: " + workingDirectory);
+        return workingDirectory;
     }
 }
