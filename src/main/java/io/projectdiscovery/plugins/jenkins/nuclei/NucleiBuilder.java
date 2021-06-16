@@ -39,16 +39,19 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
         this.targetUrl = targetUrl;
     }
 
+    @SuppressWarnings("unused")
     @DataBoundSetter
     public void setAdditionalFlags(String additionalFlags) {
         this.additionalFlags = additionalFlags;
     }
 
+    @SuppressWarnings("unused")
     @DataBoundSetter
     public void setReportingConfiguration(String reportingConfiguration) {
         this.reportingConfiguration = reportingConfiguration;
     }
 
+    @SuppressWarnings("unused")
     @DataBoundSetter
     public void setNucleiVersion(String nucleiVersion) {
         this.nucleiVersion = nucleiVersion;
@@ -119,6 +122,7 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
         }
     }
 
+    @SuppressWarnings("unused")
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
@@ -134,13 +138,15 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
          * @return {@link FormValidation#ok()} or {@link FormValidation#error(java.lang.String)} in case of a validation error.
          */
         @SuppressWarnings("unused")
-        public FormValidation doCheckTargetUrl(@QueryParameter String targetUrl, @QueryParameter String additionalFlags, @QueryParameter String reportingConfiguration) {
-
+        public FormValidation doCheckTargetUrl(@QueryParameter String targetUrl, @QueryParameter String additionalFlags, @QueryParameter String reportingConfiguration, @QueryParameter String nucleiVersion) {
             if (targetUrl.isEmpty()) {
-                return FormValidation.error(Messages.NucleiBuilder_DescriptorImpl_errors_missingName());
+                return FormValidation.error(Messages.NucleiBuilder_DescriptorImpl_errors_missingUrl());
             }
 
-            // TODO additionalFlags/reportingConfiguration validation?
+            if (nucleiVersion.isEmpty()) {
+                return FormValidation.error(Messages.NucleiBuilder_DescriptorImpl_errors_missingVersion());
+            }
+
             return FormValidation.ok();
         }
 
