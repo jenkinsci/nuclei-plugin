@@ -1,17 +1,17 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:entry title="${%TargetUrl}" field="targetUrl">
-        <f:textbox value="${targetUrl}" name="targetUrl"/>
+        <f:textbox value="${targetUrl}" name="targetUrl" checkMethod="post"/>
     </f:entry>
     <f:entry title="${%ReportingConfiguration}" field="reportingConfiguration" description="${%ReportingConfigurationDescription}">
-        <f:textarea value="${reportingConfiguration}" name="reportingConfiguration"/>
+        <f:textarea value="${reportingConfiguration}" name="reportingConfiguration" checkMethod="post"/>
     </f:entry>
     <f:advanced>
         <f:entry title="${%NucleiVersion}" field="nucleiVersion" description="${%NucleiVersionDescription}">
-            <f:select />
+            <f:select checkMethod="post"/>
         </f:entry>
         <f:entry title="${%AdditionalFlags}" field="additionalFlags" description="${%AdditionalFlagsDescription}">
-            <f:textbox value="${additionalFlags}" name="additionalFlags"/>
+            <f:textbox value="${additionalFlags}" name="additionalFlags" checkMethod="post"/>
         </f:entry>
     </f:advanced>
 </j:jelly>

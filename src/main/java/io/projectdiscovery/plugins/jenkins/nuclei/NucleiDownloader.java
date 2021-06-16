@@ -3,6 +3,7 @@ package io.projectdiscovery.plugins.jenkins.nuclei;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 
+import javax.annotation.RegEx;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -15,8 +16,11 @@ import java.util.stream.Collectors;
 
 public final class NucleiDownloader {
 
+    private static final String NUCLEI_VERSION_REGEX = "((?:\\d+\\.)+\\d+|\\d+)";
+    public static final Pattern NUCLEI_VERSION_PATTERN = Pattern.compile(NUCLEI_VERSION_REGEX);
+
     private static final String NUCLEI_RELEASE_URL = "https://github.com/projectdiscovery/nuclei/releases";
-    private static final Pattern RELEASE_TAG_URL_MATCHER = Pattern.compile("/projectdiscovery/nuclei/releases/tag/v((?:\\d+\\.)+\\d+|\\d+)");
+    private static final Pattern RELEASE_TAG_URL_PATTERN = Pattern.compile("/projectdiscovery/nuclei/releases/tag/v" + NUCLEI_VERSION_REGEX);
 
     private NucleiDownloader() {
     }
@@ -46,7 +50,7 @@ public final class NucleiDownloader {
                            .stream()
                            .map(e -> e.attr("href"))
                            .map(url -> {
-                               final Matcher matcher = RELEASE_TAG_URL_MATCHER.matcher(url);
+                               final Matcher matcher = RELEASE_TAG_URL_PATTERN.matcher(url);
                                return matcher.find() ? matcher.group(1) : null;
                            })
                            .filter(Objects::nonNull)

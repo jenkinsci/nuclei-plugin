@@ -14,6 +14,7 @@ import jenkins.tasks.SimpleBuildStep;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -138,6 +139,7 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
          * @return {@link FormValidation#ok()} or {@link FormValidation#error(java.lang.String)} in case of a validation error.
          */
         @SuppressWarnings("unused")
+        @POST
         public FormValidation doCheckTargetUrl(@QueryParameter String targetUrl, @QueryParameter String additionalFlags, @QueryParameter String reportingConfiguration, @QueryParameter String nucleiVersion) {
             if (targetUrl.isEmpty()) {
                 return FormValidation.error(Messages.NucleiBuilder_DescriptorImpl_errors_missingUrl());
@@ -145,6 +147,8 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
 
             if (nucleiVersion.isEmpty()) {
                 return FormValidation.error(Messages.NucleiBuilder_DescriptorImpl_errors_missingVersion());
+            } else if (!NucleiDownloader.NUCLEI_VERSION_PATTERN.matcher(nucleiVersion).matches()) {
+                return FormValidation.error(Messages.NucleiBuilder_DescriptorImpl_errors_incorrectVersion());
             }
 
             return FormValidation.ok();
