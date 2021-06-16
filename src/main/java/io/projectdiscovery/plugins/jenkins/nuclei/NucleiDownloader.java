@@ -7,14 +7,16 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public final class NucleiDownloader {
 
-    public static final String NUCLEI_RELEASE_URL = "https://github.com/projectdiscovery/nuclei/releases";
-    public static final Pattern VERSION_PATTERN = Pattern.compile("v(?:(\\d+\\.)+\\d+|\\d+)");
+    private static final String NUCLEI_RELEASE_URL = "https://github.com/projectdiscovery/nuclei/releases";
+    private static final Pattern RELEASE_TAG_URL_MATCHER = Pattern.compile("/projectdiscovery/nuclei/releases/tag/v((?:\\d+\\.)+\\d+|\\d+)");
 
     private NucleiDownloader() {
     }
@@ -39,12 +41,15 @@ public final class NucleiDownloader {
     }
 
     private static List<String> getNucleiVersions(Element documentBody) {
+
         return documentBody.select("div.release-header a")
                            .stream()
-                           .filter(e -> e.attr("href").contains("releases/tag"))
-                           .map(Element::text)
-                           .filter(v -> VERSION_PATTERN.matcher(v).matches())
-                           .map(v -> v.substring(1))
+                           .map(e -> e.attr("href"))
+                           .map(url -> {
+                               final Matcher matcher = RELEASE_TAG_URL_MATCHER.matcher(url);
+                               return matcher.find() ? matcher.group(1) : null;
+                           })
+                           .filter(Objects::nonNull)
                            .collect(Collectors.toList());
     }
 
