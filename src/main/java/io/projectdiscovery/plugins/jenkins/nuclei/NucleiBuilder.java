@@ -9,6 +9,7 @@ import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import jenkins.tasks.SimpleBuildStep;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -31,6 +32,7 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
     private final String targetUrl;
     private String additionalFlags;
     private String reportingConfiguration;
+    private String nucleiVersion;
 
     @DataBoundConstructor
     public NucleiBuilder(String targetUrl) {
@@ -45,6 +47,11 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
     @DataBoundSetter
     public void setReportingConfiguration(String reportingConfiguration) {
         this.reportingConfiguration = reportingConfiguration;
+    }
+
+    @DataBoundSetter
+    public void setNucleiVersion(String nucleiVersion) {
+        this.nucleiVersion = nucleiVersion;
     }
 
     /**
@@ -66,12 +73,17 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
         return additionalFlags;
     }
 
+    @SuppressWarnings("unused")
+    public String getNucleiVersion() {
+        return nucleiVersion;
+    }
+
     @Override
     public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, TaskListener listener) {
         final PrintStream logger = listener.getLogger();
 
         final FilePath workingDirectory = NucleiBuilderHelper.getWorkingDirectory(launcher, workspace, logger);
-        final String nucleiBinaryPath = NucleiBuilderHelper.prepareNucleiBinary(logger, workingDirectory);
+        final String nucleiBinaryPath = NucleiBuilderHelper.prepareNucleiBinary(workingDirectory, this.nucleiVersion, logger);
         final String[] resultCommand = createScanCommand(run, launcher, logger, workingDirectory, nucleiBinaryPath);
 
         NucleiBuilderHelper.runCommand(logger, launcher, resultCommand);
@@ -130,6 +142,17 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
 
             // TODO additionalFlags/reportingConfiguration validation?
             return FormValidation.ok();
+        }
+
+        /**
+         * Method called by Jenkins to populate the "Nuclei version" drop-down
+         * @return the Nuclei versions retrieved from the GitHub release page in a <i>vX.Y.Z</i> format
+         */
+        @SuppressWarnings("unused")
+        public ListBoxModel doFillNucleiVersionItems() {
+            return NucleiDownloader.getNucleiVersions().stream()
+                                   .map(ListBoxModel.Option::new)
+                                   .collect(ListBoxModel::new, ArrayList::add, ArrayList::addAll);
         }
 
         @Override

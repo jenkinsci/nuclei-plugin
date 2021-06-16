@@ -72,7 +72,7 @@ public final class NucleiBuilderHelper {
         return nucleiTemplatesPath;
     }
 
-    static String prepareNucleiBinary(PrintStream logger, FilePath workingDirectory) {
+    static String prepareNucleiBinary(FilePath workingDirectory, String nucleiVersion, PrintStream logger) {
         try {
             final SupportedOperatingSystem operatingSystem = SupportedOperatingSystem.getType(System.getProperty("os.name"));
             logger.println("Retrieved operating system: " + operatingSystem);
@@ -86,17 +86,17 @@ public final class NucleiBuilderHelper {
                 nucleiPath.chmod(fullPermissionToOwner);
             } else {
                 final SupportedArchitecture architecture = SupportedArchitecture.getType(System.getProperty("os.arch"));
-                downloadAndUnpackLatestNuclei(operatingSystem, architecture, workingDirectory);
+                downloadAndUnpackNuclei(operatingSystem, architecture, workingDirectory, nucleiVersion);
             }
 
             return nucleiPath.getRemote();
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException e) {
             throw new IllegalStateException("Error while obtaining Nuclei binary.");
         }
     }
 
-    static void downloadAndUnpackLatestNuclei(SupportedOperatingSystem operatingSystem, SupportedArchitecture architecture, FilePath workingDirectory) throws IOException {
-        final URL downloadUrl = NucleiDownloader.extractDownloadUrl(operatingSystem, architecture);
+    static void downloadAndUnpackNuclei(SupportedOperatingSystem operatingSystem, SupportedArchitecture architecture, FilePath workingDirectory, String nucleiVersion) throws IOException {
+        final URL downloadUrl = NucleiDownloader.createDownloadUrl(operatingSystem, architecture, nucleiVersion);
 
         final String downloadFilePath = downloadUrl.getPath().toLowerCase();
         if (downloadFilePath.endsWith(".zip")) {

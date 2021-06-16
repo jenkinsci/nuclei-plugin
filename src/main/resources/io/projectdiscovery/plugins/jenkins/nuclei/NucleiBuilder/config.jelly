@@ -7,6 +7,9 @@
         <f:textarea value="${reportingConfiguration}" name="reportingConfiguration"/>
     </f:entry>
     <f:advanced>
+        <f:entry title="${%NucleiVersion}" field="nucleiVersion" description="${%NucleiVersionDescription}">
+            <f:select />
+        </f:entry>
         <f:entry title="${%AdditionalFlags}" field="additionalFlags" description="${%AdditionalFlagsDescription}">
             <f:textbox value="${additionalFlags}" name="additionalFlags"/>
         </f:entry>
