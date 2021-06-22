@@ -10,27 +10,18 @@
 
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>nuclei</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
-
-    <properties>
-        <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
-        <jenkins.version>2.200</jenkins.version>
-        <java.level>8</java.level>
-
-        <!-- Other properties you may want to use:
-          ~ jenkins-test-harness.version: Jenkins Test Harness version you use to test the plugin. For Jenkins version >= 1.580.1 use JTH 2.0 or higher.
-          ~ hpi-plugin.version: The HPI Maven Plugin version used by the plugin..
-          ~ stapler-plugin.version: The Stapler Maven plugin version required by the plugin.
-        -->
-
-        <jsoup.version>1.13.1</jsoup.version>
-    </properties>
 
     <name>Nuclei Plugin</name>
     <description>Open-source vulnerability scanning plugin using Project Discovery's Nuclei tool</description>
+    <url>${pluginUrl}</url>
 
-    <!-- The default licence for Jenkins OSS Plugins is MIT. Substitute for the applicable one if needed. -->
+    <organization>
+        <name>Project Discovery</name>
+        <url>https://projectdiscovery.io</url>
+    </organization>
+
     <licenses>
         <license>
             <name>MIT License</name>
@@ -38,11 +29,46 @@
         </license>
     </licenses>
 
+    <developers>
+        <developer>
+            <id>forgedhallpass</id>
+            <email>istvan@projectdiscovery.io</email>
+            <organization>Project Discovery</organization>
+            <organizationUrl>https://projectdiscovery.io</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/jenkinsci/${pluginName}.git</connection>
+        <developerConnection>scm:git:git@github.com:jenkinsci/${pluginName}.git</developerConnection>
+        <url>${pluginUrl}</url>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>${pluginUrl}/issues</url>
+    </issueManagement>
+
+    <properties>
+        <revision>1.0.0</revision>
+        <changelist>-SNAPSHOT</changelist>
+
+        <pluginName>${project.artifactId}-plugin</pluginName>
+        <pluginUrl>https://github.com/jenkinsci/${pluginName}</pluginUrl>
+
+        <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
+        <jenkins.version>2.200</jenkins.version>
+        <java.level>8</java.level>
+
+        <structs.version>1.19</structs.version>
+        <jsoup.version>1.13.1</jsoup.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>structs</artifactId>
-            <version>1.19</version>
+            <version>${structs.version}</version>
         </dependency>
 
         <dependency>
@@ -58,23 +84,6 @@
         </dependency>
     </dependencies>
 
-    <developers>
-      <developer>
-        <id>forgedhallpass</id>
-        <email>istvan@projectdiscovery.io</email>
-        <organization>Project Discovery</organization>
-        <organizationUrl>https://projectdiscovery.io</organizationUrl>
-      </developer>
-    </developers>
-
-    <!-- Assuming you want to host on @jenkinsci:
-    <url>https://wiki.jenkins.io/display/JENKINS/TODO+Plugin</url>
-    <scm>
-        <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
-        <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-        <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-    </scm>
-    -->
     <repositories>
         <repository>
             <id>repo.jenkins-ci.org</id>
