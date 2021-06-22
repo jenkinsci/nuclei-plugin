@@ -6,7 +6,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     outputs:
-      should_release: ${{ steps.verify-ci-status.outputs.result == 'success' && steps.interesting-categories.outputs.interesting == 'true' }}
+      should_release: ${{ steps.verify-ci-status.outputs.result == 'success' }}
     steps:
       - name: Verify CI status
         uses: jenkins-infra/verify-ci-status-action@v1.2.0
@@ -23,13 +23,6 @@ jobs:
           tag: next
           version: next
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check interesting categories
-        uses: jenkins-infra/interesting-category-action@v1.0.0
-        id: interesting-categories
-        if: steps.verify-ci-status.outputs.result == 'success'
-        with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release:
