@@ -5,12 +5,12 @@
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
         <version>4.16</version>
-        <relativePath/>
+        <relativePath />
     </parent>
 
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>nuclei</artifactId>
-    <version>${revision}${changelist}</version>
+    <version>1.0.0</version>
     <packaging>hpi</packaging>
 
     <name>Nuclei Plugin</name>
@@ -42,7 +42,8 @@
         <connection>scm:git:git://github.com/jenkinsci/${pluginName}.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/${pluginName}.git</developerConnection>
         <url>${pluginUrl}</url>
-    </scm>
+      <tag>v1.0.0</tag>
+  </scm>
 
     <issueManagement>
         <system>GitHub Issues</system>
