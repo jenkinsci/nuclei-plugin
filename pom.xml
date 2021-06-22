@@ -10,7 +10,7 @@
 
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>nuclei</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
     <name>Nuclei Plugin</name>
@@ -42,7 +42,7 @@
         <connection>scm:git:git://github.com/jenkinsci/${pluginName}.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/${pluginName}.git</developerConnection>
         <url>${pluginUrl}</url>
-      <tag>v1.0.0</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <issueManagement>
