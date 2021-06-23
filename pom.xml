@@ -5,12 +5,12 @@
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
         <version>4.16</version>
-        <relativePath />
+        <relativePath/>
     </parent>
 
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>nuclei</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
 
     <name>Nuclei Plugin</name>
@@ -42,8 +42,8 @@
         <connection>scm:git:git://github.com/jenkinsci/${pluginName}.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/${pluginName}.git</developerConnection>
         <url>${pluginUrl}</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <issueManagement>
         <system>GitHub Issues</system>
@@ -51,7 +51,7 @@
     </issueManagement>
 
     <properties>
-        <revision>1.0.0</revision>
+        <revision>1.0.1</revision>
         <changelist>-SNAPSHOT</changelist>
 
         <pluginName>${project.artifactId}-plugin</pluginName>
@@ -97,4 +97,21 @@
             <url>https://repo.jenkins-ci.org/public/</url>
         </pluginRepository>
     </pluginRepositories>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

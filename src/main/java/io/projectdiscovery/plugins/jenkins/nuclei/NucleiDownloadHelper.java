@@ -13,7 +13,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public final class NucleiDownloader {
+/**
+ * Utility class that helps extracting information about Nuclei releases from GitHub.
+ */
+public final class NucleiDownloadHelper {
 
     private static final String NUCLEI_VERSION_REGEX = "((?:\\d+\\.)+\\d+|\\d+)";
     public static final Pattern NUCLEI_VERSION_PATTERN = Pattern.compile(NUCLEI_VERSION_REGEX);
@@ -21,13 +24,21 @@ public final class NucleiDownloader {
     private static final String NUCLEI_RELEASE_URL = "https://github.com/projectdiscovery/nuclei/releases";
     private static final Pattern RELEASE_TAG_URL_PATTERN = Pattern.compile("/projectdiscovery/nuclei/releases/tag/v" + NUCLEI_VERSION_REGEX);
 
-    private NucleiDownloader() {
-    }
+    private NucleiDownloadHelper() {}
 
+    /**
+     * @return a list of released versions of Nuclei to GitHub
+     */
     public static List<String> getNucleiVersions() {
         return getNucleiVersions(getNucleiReleasePageBody());
     }
 
+    /**
+     * @param operatingSystem The identified operating system mapped to a supported Nuclei build.
+     * @param architecture The identified architecture mapped to a supported Nuclei build.
+     * @param version An existing version of Nuclei, retrieved by {@link NucleiDownloadHelper#getNucleiVersions()}
+     * @return The URL from which the desired Nuclei build can be downloaded.
+     */
     public static URL createDownloadUrl(SupportedOperatingSystem operatingSystem, SupportedArchitecture architecture, String version) {
         final Element nucleiReleasePageBody = getNucleiReleasePageBody();
         return createDownloadUrl(nucleiReleasePageBody, operatingSystem, architecture, version);

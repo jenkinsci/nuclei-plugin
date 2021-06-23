@@ -3,9 +3,9 @@ package io.projectdiscovery.plugins.jenkins.nuclei;
 import java.util.stream.Stream;
 
 /**
- * Class that maps the OS architecture to supported Nuclei builds
+ * Class that maps the OS architecture to supported Nuclei builds.<br>
  *
- * Possible values: https://github.com/golang/go/blob/master/src/go/build/syslist.go
+ * Possible values: <a href="https://github.com/golang/go/blob/master/src/go/build/syslist.go">https://github.com/golang/go/blob/master/src/go/build/syslist.go</a>
  */
 public enum SupportedArchitecture {
     i386("386"), AMD64("amd64"), ARM64("arm64"), ARM("armv6");

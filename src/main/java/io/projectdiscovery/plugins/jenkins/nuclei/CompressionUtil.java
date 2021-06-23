@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
+/**
+ * Utility class for unpacking data obtained from the given {@link URL} or {@link InputStream}
+ */
 public final class CompressionUtil {
 
     private CompressionUtil() {}

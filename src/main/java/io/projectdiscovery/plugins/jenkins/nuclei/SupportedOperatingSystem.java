@@ -1,9 +1,9 @@
 package io.projectdiscovery.plugins.jenkins.nuclei;
 
 /**
- * Class that maps the OS to supported Nuclei builds
+ * Class that maps the OS to supported Nuclei builds.<br>
  *
- * Possible values: https://github.com/golang/go/blob/master/src/go/build/syslist.go
+ * Possible values: <a href="https://github.com/golang/go/blob/master/src/go/build/syslist.go">https://github.com/golang/go/blob/master/src/go/build/syslist.go</a>
  */
 public enum SupportedOperatingSystem {
     Windows("windows"), MacOS("macOS"), Linux("linux");

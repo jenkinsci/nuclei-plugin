@@ -95,19 +95,6 @@ public final class NucleiBuilderHelper {
         }
     }
 
-    static void downloadAndUnpackNuclei(SupportedOperatingSystem operatingSystem, SupportedArchitecture architecture, FilePath workingDirectory, String nucleiVersion) throws IOException {
-        final URL downloadUrl = NucleiDownloader.createDownloadUrl(operatingSystem, architecture, nucleiVersion);
-
-        final String downloadFilePath = downloadUrl.getPath().toLowerCase();
-        if (downloadFilePath.endsWith(".zip")) {
-            CompressionUtil.unZip(downloadUrl, workingDirectory);
-        } else if (downloadFilePath.endsWith(".tar.gz")) {
-            CompressionUtil.unTarGz(downloadUrl, workingDirectory);
-        } else {
-            throw new IllegalStateException(String.format("Unsupported file type ('%s'). It should be '.tar.gz' or '.zip'!", downloadFilePath));
-        }
-    }
-
     static FilePath getWorkingDirectory(Launcher launcher, FilePath workspace, PrintStream logger) {
         final VirtualChannel virtualChannel = launcher.getChannel();
         if (virtualChannel == null) {
@@ -117,5 +104,18 @@ public final class NucleiBuilderHelper {
         final FilePath workingDirectory = new FilePath(virtualChannel, workspace.getRemote());
         logger.println("Working directory: " + workingDirectory);
         return workingDirectory;
+    }
+
+    private static void downloadAndUnpackNuclei(SupportedOperatingSystem operatingSystem, SupportedArchitecture architecture, FilePath workingDirectory, String nucleiVersion) throws IOException {
+        final URL downloadUrl = NucleiDownloadHelper.createDownloadUrl(operatingSystem, architecture, nucleiVersion);
+
+        final String downloadFilePath = downloadUrl.getPath().toLowerCase();
+        if (downloadFilePath.endsWith(".zip")) {
+            CompressionUtil.unZip(downloadUrl, workingDirectory);
+        } else if (downloadFilePath.endsWith(".tar.gz")) {
+            CompressionUtil.unTarGz(downloadUrl, workingDirectory);
+        } else {
+            throw new IllegalStateException(String.format("Unsupported file type ('%s'). It should be '.tar.gz' or '.zip'!", downloadFilePath));
+        }
     }
 }

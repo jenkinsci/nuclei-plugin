@@ -6,6 +6,7 @@ import hudson.Launcher;
 import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.tasks.BuildStep;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
@@ -24,6 +25,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * The {@link BuildStep} that performs the actual Build.
+ */
 public class NucleiBuilder extends Builder implements SimpleBuildStep {
 
     /**
@@ -147,7 +151,7 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
 
             if (nucleiVersion.isEmpty()) {
                 return FormValidation.error(Messages.NucleiBuilder_DescriptorImpl_errors_missingVersion());
-            } else if (!NucleiDownloader.NUCLEI_VERSION_PATTERN.matcher(nucleiVersion).matches()) {
+            } else if (!NucleiDownloadHelper.NUCLEI_VERSION_PATTERN.matcher(nucleiVersion).matches()) {
                 return FormValidation.error(Messages.NucleiBuilder_DescriptorImpl_errors_incorrectVersion());
             }
 
@@ -155,14 +159,15 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
         }
 
         /**
-         * Method called by Jenkins to populate the "Nuclei version" drop-down
-         * @return the Nuclei versions retrieved from the GitHub release page in a <i>vX.Y.Z</i> format
+         * Method called by Jenkins to populate the "Nuclei version" drop-down.
+         *
+         * @return the Nuclei versions retrieved from the GitHub release page in a <i>vX.Y.Z</i> format.
          */
         @SuppressWarnings("unused")
         public ListBoxModel doFillNucleiVersionItems() {
-            return NucleiDownloader.getNucleiVersions().stream()
-                                   .map(ListBoxModel.Option::new)
-                                   .collect(ListBoxModel::new, ArrayList::add, ArrayList::addAll);
+            return NucleiDownloadHelper.getNucleiVersions().stream()
+                                       .map(ListBoxModel.Option::new)
+                                       .collect(ListBoxModel::new, ArrayList::add, ArrayList::addAll);
         }
 
         @Override
