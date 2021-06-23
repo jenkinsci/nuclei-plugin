@@ -11,6 +11,9 @@
 </p>
 
 # Vulnerability scanning using Nuclei
+<a href="https://jenkins.io/download"><img src="https://img.shields.io/badge/Jenkins-2.200-green.svg?label=min.%20Jenkins" alt="Jenkins Minimum Version"></a>
+<img src="https://img.shields.io/badge/jdk-8-yellow.svg?label=min.%20JDK" alt="JDK Minimum Version">
+<a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License"></a>
 
 ## How it works
 * The plugin downloads the latest release of Nuclei from GitHub, based on the build executor's operating system and architecture
