@@ -62,7 +62,7 @@
         <java.level>8</java.level>
 
         <structs.version>1.19</structs.version>
-        <jsoup.version>1.13.1</jsoup.version>
+        <jsoup.version>1.14.2</jsoup.version>
     </properties>
 
     <dependencies>
