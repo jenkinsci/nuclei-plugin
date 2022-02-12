@@ -58,7 +58,7 @@
         <pluginUrl>https://github.com/jenkinsci/${pluginName}</pluginUrl>
 
         <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
-        <jenkins.version>2.200</jenkins.version>
+        <jenkins.version>2.289.1</jenkins.version>
         <java.level>8</java.level>
 
         <structs.version>1.19</structs.version>
