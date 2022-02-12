@@ -1,5 +1,7 @@
 package io.projectdiscovery.plugins.jenkins.nuclei;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -17,7 +19,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -87,7 +88,7 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, TaskListener listener) {
+    public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull Launcher launcher, TaskListener listener) {
         final PrintStream logger = listener.getLogger();
 
         final FilePath workingDirectory = NucleiBuilderHelper.getWorkingDirectory(launcher, workspace, logger);
@@ -175,7 +176,7 @@ public class NucleiBuilder extends Builder implements SimpleBuildStep {
             return true;
         }
 
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return Messages.NucleiBuilder_DescriptorImpl_DisplayName();
