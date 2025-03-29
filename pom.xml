@@ -4,8 +4,8 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.34</version>
-        <relativePath/>
+        <version>4.88</version>
+        <relativePath />
     </parent>
 
     <groupId>io.jenkins.plugins</groupId>
@@ -29,15 +29,6 @@
         </license>
     </licenses>
 
-    <developers>
-        <developer>
-            <id>forgedhallpass</id>
-            <email>istvan@projectdiscovery.io</email>
-            <organization>Project Discovery</organization>
-            <organizationUrl>https://projectdiscovery.io</organizationUrl>
-        </developer>
-    </developers>
-
     <scm>
         <connection>scm:git:https://github.com/jenkinsci/${pluginName}.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/${pluginName}.git</developerConnection>
@@ -56,20 +47,31 @@
 
         <pluginName>${project.artifactId}-plugin</pluginName>
         <pluginUrl>https://github.com/jenkinsci/${pluginName}</pluginUrl>
+        <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
+        <jenkins.baseline>2.462</jenkins.baseline>
 
         <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
-        <jenkins.version>2.289.1</jenkins.version>
-        <java.level>8</java.level>
+        <jenkins.version>${jenkins.baseline}.3</jenkins.version>
 
         <structs.version>1.19</structs.version>
         <jsoup.version>1.15.3</jsoup.version>
     </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.jenkins.tools.bom</groupId>
+                <artifactId>bom-${jenkins.baseline}.x</artifactId>
+                <version>4228.v0a_71308d905b_</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>structs</artifactId>
-            <version>${structs.version}</version>
         </dependency>
 
         <dependency>
